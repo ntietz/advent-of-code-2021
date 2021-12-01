@@ -9,6 +9,9 @@ fn main() {
         panic!("Error: must provide at least one day");
     }
 
-    let days: Vec<u32> = args[1..].iter().map(|arg| arg.parse().expect("Must provide integers")).collect();
+    let days: Vec<u32> = args[1..]
+        .iter()
+        .map(|arg| arg.parse().expect("Must provide integers"))
+        .collect();
     days.iter().for_each(|&day| runner::run(day));
 }
