@@ -1,16 +1,7 @@
 pub fn run() {
-    part1();
-    part2();
-}
-
-pub fn part1() {
-    let solution = solve_part1(puzzle_input());
-    println!("day01.part1.solution = {}", solution);
-}
-
-pub fn part2() {
-    let solution = solve_part2(puzzle_input());
-    println!("day01.part2.solution = {}", solution);
+    let input = puzzle_input();
+    println!("day01.part1.solution = {}", solve_part1(input));
+    println!("day01.part2.solution = {}", solve_part2(input));
 }
 
 fn solve_part1(input: &str) -> usize {
