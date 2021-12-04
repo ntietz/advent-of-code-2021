@@ -2,8 +2,8 @@ use num::PrimInt;
 
 pub fn run() {
     let input = puzzle_input();
-    println!("day02.part1.solution = {}", solve_part1(input));
-    println!("day02.part2.solution = {}", solve_part2(input));
+    println!("day03.part1.solution = {}", solve_part1(input));
+    println!("day03.part2.solution = {}", solve_part2(input));
 }
 
 fn solve_part1(input: &str) -> u32 {
