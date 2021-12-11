@@ -27,7 +27,7 @@ fn solve_part2(input: &str) -> u64 {
         .collect();
     scores.sort_unstable();
 
-    scores[scores.len()/2]
+    scores[scores.len() / 2]
 }
 
 fn puzzle_input() -> &'static str {
@@ -64,7 +64,10 @@ fn check_syntax(line: &str) -> Option<SyntaxError> {
 }
 
 fn valid_pair(left: char, right: char) -> bool {
-    matches!((left, right), ('(', ')') | ('[', ']') | ('{', '}') | ('<', '>'))
+    matches!(
+        (left, right),
+        ('(', ')') | ('[', ']') | ('{', '}') | ('<', '>')
+    )
 }
 
 fn score_mismatch(c: char) -> u64 {
@@ -95,7 +98,6 @@ fn score_incomplete(s: String) -> u64 {
     score
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -111,8 +113,14 @@ mod test {
             Some(SyntaxError::MismatchedChunk('(', ']'))
         );
         assert_eq!(check_syntax("()"), None);
-        assert_eq!(check_syntax("("), Some(SyntaxError::Incomplete("(".to_string())));
-        assert_eq!(check_syntax("[{()"), Some(SyntaxError::Incomplete("[{".to_string())));
+        assert_eq!(
+            check_syntax("("),
+            Some(SyntaxError::Incomplete("(".to_string()))
+        );
+        assert_eq!(
+            check_syntax("[{()"),
+            Some(SyntaxError::Incomplete("[{".to_string()))
+        );
         assert_eq!(check_syntax("[])"), Some(SyntaxError::CloseBeforeOpen(')')));
     }
 
