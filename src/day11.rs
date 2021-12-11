@@ -24,7 +24,7 @@ fn solve_part2(input: &str) -> usize {
         round += 1;
     }
 
-    return round;
+    round
 }
 
 /// Represents all the octopi in the cavern.
@@ -38,7 +38,7 @@ impl OctoGrid {
     pub fn parse(input: &str) -> Self {
         let energy_levels: Vec<_> = input.chars().flat_map(|c| c.to_digit(10)).collect();
         let size = (energy_levels.len() as f64).sqrt() as usize;
-        assert_eq!(size*size, energy_levels.len());
+        assert_eq!(size * size, energy_levels.len());
         OctoGrid {
             energy_levels,
             rows: size,
@@ -58,10 +58,10 @@ impl OctoGrid {
         while changed {
             changed = false;
 
-            for idx in 0..(self.energy_levels.len()) {
-                if self.energy_levels[idx] > 9 && !flashed[idx] {
+            for (idx, flash) in flashed.iter_mut().enumerate() {
+                if self.energy_levels[idx] > 9 && !*flash {
                     changed = true;
-                    flashed[idx] = true;
+                    *flash = true;
 
                     for neighbor in self.neighbors(idx) {
                         self.energy_levels[neighbor] += 1;
@@ -88,7 +88,12 @@ impl OctoGrid {
         for d_row in -1..=1 {
             for d_col in -1..=1 {
                 let (n_row, n_col) = (d_row + row, d_col + col);
-                if 0 <= n_row && n_row < self.rows as i32 && 0 <= n_col && n_col < self.cols as i32 && (n_row, n_col) != (row, col) {
+                if 0 <= n_row
+                    && n_row < self.rows as i32
+                    && 0 <= n_col
+                    && n_col < self.cols as i32
+                    && (n_row, n_col) != (row, col)
+                {
                     neighbors.push((n_row as usize * self.rows) + n_col as usize);
                 }
             }
@@ -101,7 +106,6 @@ impl OctoGrid {
 fn puzzle_input() -> &'static str {
     include_str!("../inputs/day11.txt")
 }
-
 
 #[cfg(test)]
 mod test {
@@ -122,7 +126,7 @@ mod test {
             ";
         let mut grid = OctoGrid::parse(input);
 
-        assert_eq!(vec![1,5,6], grid.neighbors(0));
+        assert_eq!(vec![1, 5, 6], grid.neighbors(0));
         assert_eq!(vec![0, 1, 2, 5, 7, 10, 11, 12], grid.neighbors(6));
 
         assert_eq!(9, grid.step());
