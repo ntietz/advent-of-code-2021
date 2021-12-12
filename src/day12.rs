@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 pub fn run() {
     let input = puzzle_input();
@@ -6,35 +7,25 @@ pub fn run() {
     println!("day12.part2.solution = {}", solve_part2(input));
 }
 
-fn solve_part1(input: &str) -> usize {
+fn solve_part1(input: &'static str) -> usize {
     let g = parse_input(input);
-    let paths = all_paths(
-        &g,
-        "start".to_string(),
-        "end".to_string(),
-        vec![vec!["start".to_string()]],
-        false,
-    );
-    paths.len()
+    let start = Rc::new("start");
+    let end = Rc::new("end");
+    path_count(&g, start.clone(), end, vec![start], false)
 }
 
-fn solve_part2(input: &str) -> usize {
+fn solve_part2(input: &'static str) -> usize {
     let g = parse_input(input);
-    let paths = all_paths(
-        &g,
-        "start".to_string(),
-        "end".to_string(),
-        vec![vec!["start".to_string()]],
-        true,
-    );
-    paths.len()
+    let start = Rc::new("start");
+    let end = Rc::new("end");
+    path_count(&g, start.clone(), end, vec![start], true)
 }
 
 fn puzzle_input() -> &'static str {
     include_str!("../inputs/day12.txt")
 }
 
-fn parse_input(input: &str) -> Graph {
+fn parse_input(input: &'static str) -> Graph {
     let lines: Vec<_> = input.lines().collect();
 
     let node_ids: HashSet<_> = lines.iter().flat_map(|&line| line.split('-')).collect();
@@ -50,48 +41,39 @@ fn parse_input(input: &str) -> Graph {
     let mut graph = Graph::new();
 
     for id in node_ids.iter() {
-        graph.insert(id.to_string(), Neighbors::new());
+        graph.insert(Rc::new(id), Neighbors::new());
     }
 
     for (left, right) in adjacent_ids {
-        graph
-            .get_mut(&left.to_string())
-            .unwrap()
-            .insert(right.to_string());
+        graph.get_mut(&Rc::new(left)).unwrap().insert(Rc::new(right));
     }
 
     graph
 }
 
-fn all_paths(g: &Graph, from: Node, to: Node, paths: Vec<Path>, allow_double: bool) -> Vec<Path> {
-    if paths.is_empty() || from == to {
-        return paths;
+fn path_count(g: &Graph, from: Node, to: Node, path: Path, allow_double: bool) -> usize {
+    if from == to {
+        return 1;
     }
 
-    g.get(&from)
-        .unwrap()
-        .iter()
-        .flat_map(|neighbor| {
-            let paths: Vec<Path> = paths
-                .iter()
-                .filter(|&path| {
-                    if !allow_double {
-                        is_big(neighbor) || !path.contains(neighbor)
-                    } else {
-                        (is_big(neighbor) || !has_double(path) || !path.contains(neighbor))
-                            && neighbor != "start"
-                    }
-                })
-                .map(|path| {
-                    let mut path = path.clone();
-                    path.push(neighbor.clone());
-                    path
-                })
-                .collect();
+    let neighbors = g.get(&from).unwrap();
 
-            all_paths(g, neighbor.clone(), to.clone(), paths, allow_double)
+    neighbors
+        .iter()
+        .filter(|&neighbor| {
+            if !allow_double {
+                is_big(neighbor) || !path.contains(neighbor)
+            } else {
+                (is_big(neighbor) || !has_double(&path) || !path.contains(neighbor))
+                    && **neighbor != "start"
+            }
         })
-        .collect()
+        .map(|neighbor| {
+            let mut path = path.clone();
+            path.push(neighbor.clone());
+            path_count(g, neighbor.clone(), to.clone(), path, allow_double)
+        })
+        .sum()
 }
 
 fn is_big(node: &Node) -> bool {
@@ -104,7 +86,7 @@ fn has_double(path: &Path) -> bool {
     small_ids.len() != dedup_ids.len()
 }
 
-type Node = String;
+type Node = Rc<&'static str>;
 type Neighbors = HashSet<Node>;
 type Graph = HashMap<Node, Neighbors>;
 
