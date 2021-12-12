@@ -1,5 +1,6 @@
-use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::hash_map::DefaultHasher;
+use std::collections::{BTreeMap, BTreeSet};
+use std::hash::{Hash, Hasher};
 
 pub fn run() {
     let input = puzzle_input();
@@ -9,16 +10,16 @@ pub fn run() {
 
 fn solve_part1(input: &'static str) -> usize {
     let g = parse_input(input);
-    let start = Rc::new("start");
-    let end = Rc::new("end");
-    path_count(&g, start.clone(), end, vec![start], false)
+    let start = compute_hash("start");
+    let end = compute_hash("end");
+    path_count(&g, start, end, vec![start], false)
 }
 
 fn solve_part2(input: &'static str) -> usize {
     let g = parse_input(input);
-    let start = Rc::new("start");
-    let end = Rc::new("end");
-    path_count(&g, start.clone(), end, vec![start], true)
+    let start = compute_hash("start");
+    let end = compute_hash("end");
+    path_count(&g, start, end, vec![start], true)
 }
 
 fn puzzle_input() -> &'static str {
@@ -28,27 +29,41 @@ fn puzzle_input() -> &'static str {
 fn parse_input(input: &'static str) -> Graph {
     let lines: Vec<_> = input.lines().collect();
 
-    let node_ids: HashSet<_> = lines.iter().flat_map(|&line| line.split('-')).collect();
+    let node_ids: BTreeSet<Node> = lines
+        .iter()
+        .flat_map(|&line| line.split('-'))
+        .map(|s| compute_hash(s))
+        .collect();
 
-    let adjacent_ids: HashSet<(&str, &str)> = lines
+    let adjacent_ids: BTreeSet<(Node, Node)> = lines
         .iter()
         .flat_map(|&line| {
             let (left, right) = line.split_once('-').unwrap();
-            [(left, right), (right, left)]
+            [
+                (compute_hash(left), compute_hash(right)),
+                (compute_hash(right), compute_hash(left)),
+            ]
         })
         .collect();
 
     let mut graph = Graph::new();
 
-    for id in node_ids.iter() {
-        graph.insert(Rc::new(id), Neighbors::new());
+    for &id in node_ids.iter() {
+        graph.insert(id, Neighbors::new());
     }
 
     for (left, right) in adjacent_ids {
-        graph.get_mut(&Rc::new(left)).unwrap().insert(Rc::new(right));
+        graph.get_mut(&left).unwrap().insert(right);
     }
 
     graph
+}
+
+fn compute_hash(s: &str) -> u64 {
+    let mut h = DefaultHasher::new();
+    let big = is_big(s);
+    s.hash(&mut h);
+    (h.finish() << 1) | (if big { 1 } else { 0 })
 }
 
 fn path_count(g: &Graph, from: Node, to: Node, path: Path, allow_double: bool) -> usize {
@@ -62,33 +77,37 @@ fn path_count(g: &Graph, from: Node, to: Node, path: Path, allow_double: bool) -
         .iter()
         .filter(|&neighbor| {
             if !allow_double {
-                is_big(neighbor) || !path.contains(neighbor)
+                big_bit_set(*neighbor) || !path.contains(neighbor)
             } else {
-                (is_big(neighbor) || !has_double(&path) || !path.contains(neighbor))
-                    && **neighbor != "start"
+                (big_bit_set(*neighbor) || !has_double(&path) || !path.contains(neighbor))
+                    && *neighbor != compute_hash("start")
             }
         })
         .map(|neighbor| {
             let mut path = path.clone();
-            path.push(neighbor.clone());
-            path_count(g, neighbor.clone(), to.clone(), path, allow_double)
+            path.push(*neighbor);
+            path_count(g, *neighbor, to, path, allow_double)
         })
         .sum()
 }
 
-fn is_big(node: &Node) -> bool {
+fn is_big(node: &str) -> bool {
     node.chars().next().unwrap().is_uppercase()
 }
 
+fn big_bit_set(n: Node) -> bool {
+    n % 2 == 1
+}
+
 fn has_double(path: &Path) -> bool {
-    let small_ids: Vec<Node> = path.iter().cloned().filter(|n| !is_big(n)).collect();
-    let dedup_ids: HashSet<Node> = small_ids.iter().cloned().collect();
+    let small_ids: Vec<Node> = path.iter().cloned().filter(|n| !big_bit_set(*n)).collect();
+    let dedup_ids: Neighbors = small_ids.iter().cloned().collect();
     small_ids.len() != dedup_ids.len()
 }
 
-type Node = Rc<&'static str>;
-type Neighbors = HashSet<Node>;
-type Graph = HashMap<Node, Neighbors>;
+type Node = u64;
+type Neighbors = BTreeSet<Node>;
+type Graph = BTreeMap<Node, Neighbors>;
 
 type Path = Vec<Node>;
 
