@@ -84,7 +84,9 @@ fn path_count(g: &Graph, from: Node, to: Node, path: &mut Path, allow_double: bo
                 if !big_bit_set(*neighbor) && path.contains(neighbor) {
                     return 0;
                 }
-            } else if *neighbor == compute_hash("start") || !big_bit_set(*neighbor) && path_has_double && path.contains(neighbor) {
+            } else if *neighbor == compute_hash("start")
+                || !big_bit_set(*neighbor) && path_has_double && path.contains(neighbor)
+            {
                 return 0;
             }
 
