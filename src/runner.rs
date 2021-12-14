@@ -13,6 +13,7 @@ pub fn run(day: u32) {
         11 => crate::day11::run(),
         12 => crate::day12::run(),
         13 => crate::day13::run(),
+        14 => crate::day14::run(),
         _ => panic!("Unfinished day"),
     }
 }
