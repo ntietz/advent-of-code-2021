@@ -20,26 +20,36 @@ fn solve_part2(input: &str) -> u32 {
 
 fn find_cheapest_path(grid: &[Vec<u32>]) -> u32 {
     let mut visited: Vec<Vec<bool>> = (0..grid.len()).map(|_| vec![false; grid.len()]).collect();
-    let mut costs: Vec<Vec<Option<u32>>> =
-        (0..grid.len()).map(|_| vec![None; grid.len()]).collect();
-    costs[0][0] = Some(0);
+    let mut costs: Vec<Vec<u32>> = (0..grid.len())
+        .map(|_| vec![u32::max_value(); grid.len()])
+        .collect();
+    costs[0][0] = 0;
     visited[0][0] = true;
 
     let mut fringe: BinaryHeap<Reverse<(u32, (usize, usize))>> = BinaryHeap::new();
     fringe.push(Reverse((0, (0, 0))));
-    while let Some(Reverse((_, coord @ (x, y)))) = fringe.pop() {
+    while let Some(Reverse((cost, coord @ (x, y)))) = fringe.pop() {
+        // This happens if we found a faster path to this node after putting it in the fringe, so
+        // there's no point continuing to do any work here.
+        if cost != costs[x][y] {
+            continue;
+        }
+
         visited[x][y] = true;
         for neighbor @ (a, b) in neighboring_points(coord, grid.len()) {
-            let path_cost = costs[x][y].unwrap() + grid[a][b];
-            if !visited[a][b] || path_cost < costs[a][b].unwrap() {
+            let path_cost = costs[x][y] + grid[a][b];
+            if !visited[a][b] {
                 visited[a][b] = true;
-                costs[a][b] = Some(path_cost);
+                costs[a][b] = path_cost;
+                fringe.push(Reverse((path_cost, neighbor)));
+            } else if path_cost < costs[a][b] {
+                costs[a][b] = path_cost;
                 fringe.push(Reverse((path_cost, neighbor)));
             }
         }
     }
 
-    costs[grid.len() - 1][grid.len() - 1].unwrap()
+    costs[grid.len() - 1][grid.len() - 1]
 }
 
 fn embiggen_grid(grid: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
@@ -71,7 +81,7 @@ fn inc_by(n: u32, inc: u32) -> u32 {
 }
 
 fn neighboring_points((x, y): (usize, usize), max: usize) -> Vec<(usize, usize)> {
-    let mut neighbors = vec![];
+    let mut neighbors = Vec::with_capacity(4);
 
     if x > 0 {
         neighbors.push((x - 1, y));
