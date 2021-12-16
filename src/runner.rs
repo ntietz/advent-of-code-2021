@@ -15,6 +15,7 @@ pub fn run(day: u32) {
         13 => crate::day13::run(),
         14 => crate::day14::run(),
         15 => crate::day15::run(),
+        16 => crate::day16::run(),
         _ => panic!("Unfinished day"),
     }
 }
