@@ -13,7 +13,7 @@ fn solve_part1(input: &'static str) -> usize {
     let start = compute_hash("start");
     let end = compute_hash("end");
     let mut path = vec![start];
-    path_count(&g, start, end, &mut path, false)
+    path_count(&g, start, end, &mut path, false, start)
 }
 
 fn solve_part2(input: &'static str) -> usize {
@@ -21,7 +21,7 @@ fn solve_part2(input: &'static str) -> usize {
     let start = compute_hash("start");
     let end = compute_hash("end");
     let mut path = vec![start];
-    path_count(&g, start, end, &mut path, true)
+    path_count(&g, start, end, &mut path, true, start)
 }
 
 fn puzzle_input() -> &'static str {
@@ -68,14 +68,21 @@ fn compute_hash(s: &str) -> u64 {
     (h.finish() << 1) | (if big { 1 } else { 0 })
 }
 
-fn path_count(g: &Graph, from: Node, to: Node, path: &mut Path, allow_double: bool) -> usize {
+fn path_count(
+    g: &Graph,
+    from: Node,
+    to: Node,
+    path: &mut Path,
+    allow_double: bool,
+    start_hash: u64,
+) -> usize {
     if from == to {
         return 1;
     }
 
     let neighbors = g.get(&from).unwrap();
 
-    let path_has_double = has_double(path);
+    let path_has_double = !all_unique(path);
 
     neighbors
         .iter()
@@ -84,15 +91,19 @@ fn path_count(g: &Graph, from: Node, to: Node, path: &mut Path, allow_double: bo
                 if !big_bit_set(*neighbor) && path.contains(neighbor) {
                     return 0;
                 }
-            } else if *neighbor == compute_hash("start")
+            } else if *neighbor == start_hash
                 || !big_bit_set(*neighbor) && path_has_double && path.contains(neighbor)
             {
                 return 0;
             }
 
-            path.push(*neighbor);
-            let count = path_count(g, *neighbor, to, path, allow_double);
-            path.pop();
+            if !big_bit_set(*neighbor) {
+                path.push(*neighbor);
+            }
+            let count = path_count(g, *neighbor, to, path, allow_double, start_hash);
+            if !big_bit_set(*neighbor) {
+                path.pop();
+            }
             count
         })
         .sum()
@@ -106,19 +117,15 @@ fn big_bit_set(n: Node) -> bool {
     n % 2 == 1
 }
 
-fn has_double(path: &Path) -> bool {
-    for (i, &elem) in path.iter().enumerate() {
-        if big_bit_set(elem) {
-            continue;
-        }
-
-        for (j, &other) in path.iter().enumerate() {
-            if i != j && elem == other {
-                return true;
+fn all_unique(path: &Path) -> bool {
+    for i in 0..path.len() - 1 {
+        for j in i + 1..path.len() {
+            if path[i] == path[j] {
+                return false;
             }
         }
     }
-    false
+    true
 }
 
 type Node = u64;
